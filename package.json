@@ -1,13 +1,12 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "your-app-name",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "chart.js": "^4.4.7",
-    "react": "^18.0.0",
-    "react-chartjs-2": "^5.2.0",
-    "react-dom": "^18.0.0",
-    "react-scripts": "5.0.1"
+    "react": "^17.0.0",
+    "react-dom": "^17.0.0",
+    "react-scripts": "^4.0.0",
+    "web-vitals": "^4.2.4"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -19,18 +18,6 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
     ]
   }
 }
