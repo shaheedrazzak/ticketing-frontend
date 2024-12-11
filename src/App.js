@@ -5,47 +5,60 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 function App() {
-  const [availableTickets, setAvailableTickets] = useState(0); // Start with 0
-  const [soldTickets, setSoldTickets] = useState(0);           // Start with 0
-  const [maxCapacity, setMaxCapacity] = useState(200);         // Default max capacity
+  const [availableTickets, setAvailableTickets] = useState(0);
+  const [soldTickets, setSoldTickets] = useState(0);
+  const [maxCapacity, setMaxCapacity] = useState(200);
   const [error, setError] = useState(null);
   const [ticketData, setTicketData] = useState([]);
   const [purchaseAmount, setPurchaseAmount] = useState('');
   const [addAmount, setAddAmount] = useState('');
   const [isVIP, setIsVIP] = useState(false);
+  const [socket, setSocket] = useState(null); // Added socket state
 
+  // WebSocket connection setup with cleanup
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:4000');
+    const newSocket = new WebSocket('wss://ticketing-backend-production.up.railway.app');
+    setSocket(newSocket);
 
-    socket.onopen = () => {
+    newSocket.onopen = () => {
       console.log('WebSocket connection established');
     };
 
-    socket.onmessage = (event) => {
+    newSocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === 'init' || data.type === 'update') {
+      if (data.type === 'init') {
         setAvailableTickets(data.availableTickets);
+        setSoldTickets(data.soldTickets);
         setMaxCapacity(data.maxCapacity);
-        setSoldTickets(data.soldTickets); // Set sold tickets from backend
+        setTicketData([]); // Clear old graph data on initialization
       }
 
       if (data.type === 'update') {
-        const newTicketData = [
-          ...ticketData,
-          { time: new Date().toLocaleTimeString(), tickets: data.availableTickets },
-        ];
-        if (newTicketData.length > 10) newTicketData.shift();
-        setTicketData(newTicketData);
+        setAvailableTickets(data.availableTickets);
+        setSoldTickets(data.soldTickets);
+
+        // Update graph data
+        setTicketData((prevData) => {
+          const newData = [
+            ...prevData,
+            { time: new Date().toLocaleTimeString(), tickets: data.availableTickets },
+          ];
+
+          // Limit to 10 data points
+          if (newData.length > 10) newData.shift();
+
+          return newData;
+        });
       }
     };
 
-    socket.onerror = (err) => {
+    newSocket.onerror = (err) => {
       console.error('WebSocket error:', err);
       setError('WebSocket connection error');
     };
 
-    socket.onclose = (event) => {
+    newSocket.onclose = (event) => {
       if (!event.wasClean) {
         setError('WebSocket closed unexpectedly');
         console.error('WebSocket closed unexpectedly', event);
@@ -54,21 +67,19 @@ function App() {
       }
     };
 
+    // Cleanup WebSocket connection on component unmount
     return () => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.close();
+      if (newSocket.readyState === WebSocket.OPEN) {
+        newSocket.close();
       }
     };
-  }, [ticketData]);
+  }, []); // Empty dependency array ensures WebSocket is set up only once
 
   const handleAddTickets = () => {
     const amount = parseInt(addAmount);
     if (!isNaN(amount) && amount > 0) {
-      const socket = new WebSocket('wss://ticketing-backend-production.up.railway.app');
-      socket.onopen = () => {
-        socket.send(JSON.stringify({ type: 'add', tickets: amount }));
-        setAddAmount('');
-      };
+      socket.send(JSON.stringify({ type: 'add', tickets: amount }));
+      setAddAmount('');
     } else {
       alert('Please enter a valid number of tickets to add.');
     }
@@ -77,11 +88,8 @@ function App() {
   const handlePurchaseTickets = () => {
     const amount = parseInt(purchaseAmount);
     if (!isNaN(amount) && amount > 0) {
-      const socket = new WebSocket('ws://localhost:4000');
-      socket.onopen = () => {
-        socket.send(JSON.stringify({ type: 'purchase', tickets: amount, isVIP }));
-        setPurchaseAmount('');
-      };
+      socket.send(JSON.stringify({ type: 'purchase', tickets: amount, isVIP }));
+      setPurchaseAmount('');
     } else {
       alert('Please enter a valid number of tickets to purchase.');
     }
@@ -107,7 +115,7 @@ function App() {
       ) : (
         <div>
           <p>Available Tickets: {availableTickets}</p>
-          <p>Tickets Sold: {soldTickets}</p> {/* Display tickets sold */}
+          <p>Tickets Sold: {soldTickets}</p>
           <p>Max Capacity: {maxCapacity}</p>
 
           <div>
