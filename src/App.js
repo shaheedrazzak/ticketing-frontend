@@ -64,7 +64,7 @@ function App() {
   const handleAddTickets = () => {
     const amount = parseInt(addAmount);
     if (!isNaN(amount) && amount > 0) {
-      const socket = new WebSocket('ws://localhost:4000');
+      const socket = new WebSocket('wss://ticketing-backend-production.up.railway.app');
       socket.onopen = () => {
         socket.send(JSON.stringify({ type: 'add', tickets: amount }));
         setAddAmount('');
